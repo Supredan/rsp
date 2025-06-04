@@ -351,7 +351,24 @@ class RSPMonitor:
                     self.state['third_dip_triggered'] = True
                     logger.info(f"触发条件4: 市场宽度{market_breadth:.1f}%")
             
-            # 发送提醒
+            # 发送每日状态报告
+            daily_report = f"""📊 RSP每日监控报告
+
+💰 当前价格: ${today_close:.2f}
+📈 日收益率: {today_return:+.2%}
+📉 月累计跌幅: {cumulative_decline:+.2%}
+📅 监控月份: {current_month}
+
+🎯 触发状态:
+   第一笔定投: {'✅已触发' if self.state['first_dip_triggered'] else '⏳等待中'}
+   到期提醒: {'✅已触发' if self.state['monthly_deadline_triggered'] else '⏳等待中'}
+   第二笔定投: {'✅已触发' if self.state['second_dip_triggered'] else '⏳等待中'}
+   第三笔定投: {'✅已触发' if self.state['third_dip_triggered'] else '⏳等待中'}
+
+{'🔔 今日触发: ' + str(len(messages)) + ' 个提醒' if messages else '😴 今日无触发条件'}"""
+            
+            # 发送所有消息
+            self.send_wechat(daily_report)
             for msg in messages:
                 self.send_wechat(msg)
             
@@ -364,7 +381,7 @@ class RSPMonitor:
             print(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
             print(f"💰 当前价格: ${today_close:.2f}")
             print(f"📈 日收益率: {today_return:+.2%}")
-            print(f"📉 月累计跌幅: {cumulative_decline:.2%}")
+            print(f"📉 月累计跌幅: {cumulative_decline:+.2%}")
             print(f"📅 监控月份: {current_month}")
             print(f"\n🎯 触发状态:")
             print(f"   第一笔定投: {'✅已触发' if self.state['first_dip_triggered'] else '⏳等待中'}")
