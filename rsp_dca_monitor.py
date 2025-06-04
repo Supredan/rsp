@@ -92,6 +92,13 @@ class RSPMonitor:
     async def initialize(self):
         """初始化长桥API"""
         try:
+            # 检查必要的环境变量
+            required_vars = ['LONGPORT_APP_KEY', 'LONGPORT_APP_SECRET', 'LONGPORT_ACCESS_TOKEN']
+            missing_vars = [var for var in required_vars if not os.getenv(var)]
+            
+            if missing_vars:
+                raise ValueError(f"缺少必要的环境变量: {', '.join(missing_vars)}")
+            
             config = Config.from_env()
             self.quote_ctx = QuoteContext(config)
             logger.info("成功初始化RSP监控系统")
@@ -232,7 +239,7 @@ class RSPMonitor:
             # 检查是否为新月份
             if self.state['current_month'] != current_month:
                 self.reset_monthly_state(current_month)
-                # 设置月初价格 - 修复数据类型问题
+                # 设置月初价格
                 month_start_data = df[pd.to_datetime(df['date']).dt.strftime('%Y-%m') == current_month]
                 if not month_start_data.empty:
                     self.state['month_start_price'] = float(month_start_data.iloc[0]['open'])
@@ -240,11 +247,14 @@ class RSPMonitor:
             # 获取今日数据
             today_data = df[df['date'] == today]
             if today_data.empty:
-                logger.warning("今日RSP数据不可用")
-                return
-            
-            today_close = float(today_data.iloc[-1]['close'])
-            today_return = float(today_data.iloc[-1]['daily_return']) if not pd.isna(today_data.iloc[-1]['daily_return']) else 0
+                # 如果今日数据不可用，使用最近一个交易日的数据
+                latest_data = df.iloc[-1]
+                logger.info(f"今日RSP数据不可用，使用最近交易日数据: {latest_data['date']}")
+                today_close = float(latest_data['close'])
+                today_return = float(latest_data['daily_return']) if not pd.isna(latest_data['daily_return']) else 0
+            else:
+                today_close = float(today_data.iloc[-1]['close'])
+                today_return = float(today_data.iloc[-1]['daily_return']) if not pd.isna(today_data.iloc[-1]['daily_return']) else 0
             
             # 更新月度最低价
             if self.state['month_low_price'] is None:
