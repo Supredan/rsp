@@ -1,0 +1,52 @@
+name: RSP ETF DCA Monitor
+
+on:
+  schedule:
+    # 每日北京时间21:00执行 (UTC 13:00)
+    - cron: '0 13 * * 1-5'  # 仅工作日执行
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Run RSP Monitor
+      env:
+        LONGPORT_APP_KEY: ${{ secrets.LONGPORT_APP_KEY }}
+        LONGPORT_APP_SECRET: ${{ secrets.LONGPORT_APP_SECRET }}
+        LONGPORT_ACCESS_TOKEN: ${{ secrets.LONGPORT_ACCESS_TOKEN }}
+        SCKEY: ${{ secrets.SCKEY }}
+      run: |
+        python rsp_dca_monitor.py
+        
+    - name: Upload logs (if exists)
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: rsp-monitor-logs
+        path: |
+          *.log
+          rsp_state.json
+        retention-days: 30 
