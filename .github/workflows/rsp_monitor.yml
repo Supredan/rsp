@@ -42,7 +42,7 @@ jobs:
         python rsp_dca_monitor.py
         
     - name: Upload logs (if exists)
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: rsp-monitor-logs
